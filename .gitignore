@@ -1,0 +1,16 @@
+# Python bytecode
+*.pyc
+
+# Python distribution / packages
+*.egg-info/
+*.egg
+
+# Generic log output
+*.log
+
+# Virtualenv
+/.venv
+
+# py.test
+.cache
+.pytest_cache/
