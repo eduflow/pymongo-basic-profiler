@@ -23,6 +23,29 @@ Unsupport operations
 
 * `insert_many`
 
+Example
+-------
+
+    import pymongo
+    from pymongo_basic_profiler import OpTracker
+
+    with OpTracker() as op_tracker:
+        client = pymongo.MongoClient()
+        db = client.test_optracker_db
+        db.people.insert({'name': 'Jane Doe', 'email': 'jane@example.org'})
+        db.people.find_one({'email': 'jane@example.org'})
+        db.people.find_one({'name': 'Jane Doe'})
+        assert len(op_tracker.inserts) == 1
+        assert len(op_tracker.queries) == 2
+        assert op_tracker.queries[0]['result'] == [
+            {
+                '_id': ObjectId('5ba3635b037b306569dce4bf'),
+                'name': 'Jane Doe',
+                'email': 'jane@example.org',
+            }
+        ]
+
+
 Found a similar project?
 ------------------------
 I have not been able to find a project that does the same.

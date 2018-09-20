@@ -61,3 +61,17 @@ def test_find():
             pass
 
         assert len(op_tracker.queries) == 3
+
+
+def test_readme():
+    with OpTracker() as op_tracker:
+        client = pymongo.MongoClient()
+        db = client.test_optracker_db
+        db.people.insert({'name': 'Jane Doe', 'email': 'jane@example.org'})
+        db.people.find_one({'email': 'jane@example.org'})
+        db.people.find_one({'name': 'Jane Doe'})
+        assert len(op_tracker.inserts) == 1
+        assert len(op_tracker.queries) == 2
+        res = op_tracker.queries[0]['result']
+        del res[0]['_id']
+        assert res == [{'name': 'Jane Doe', 'email': 'jane@example.org'}]

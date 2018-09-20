@@ -1,3 +1,4 @@
+from copy import deepcopy
 import functools
 import time
 import inspect
@@ -222,6 +223,8 @@ class OpTracker(object):
             collection_name = privar('collection')
             query_data['collection'] = collection_name.full_name.split('.')[1]
 
+            query_result = list(deepcopy(privar('data')))
+
             if query_data['collection'] == '$cmd':
                 # The query can be embedded within $query in some cases
                 query_son = query_son.get("$query", query_son)
@@ -234,18 +237,21 @@ class OpTracker(object):
                     query_data['operation'] = 'count'
                     query_data['skip'] = query_son.get('skip')
                     query_data['limit'] = abs(query_son.get('limit', 0))
+                    query_data['result'] = query_result
                     query_data['query'] = query_son['query']
                 elif 'aggregate' in query_son:
                     query_data['collection'] = query_son['aggregate']
                     query_data['operation'] = 'aggregate'
                     query_data['query'] = query_son['pipeline']
                     query_data['skip'] = 0
+                    query_data['result'] = query_result
                     query_data['limit'] = None
             else:
                 # Normal Query
                 query_data['skip'] = privar('skip')
                 query_data['limit'] = abs(privar('limit') or 0)
                 query_data['query'] = query_son.get('$query') or query_son
+                query_data['result'] = query_result
                 query_data['ordering'] = self._get_ordering(query_son)
 
             self.queries.append(query_data)
