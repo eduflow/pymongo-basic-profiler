@@ -42,16 +42,21 @@ class OpTracker(object):
             pymongo.cursor.Cursor._refresh = self._method_refresh
 
     def uninstall_tracker(self):
-        if pymongo.collection.Collection._insert == self._method_insert:
-            pymongo.collection.Collection._insert = _original_methods['insert']
-        if pymongo.collection.Collection._update == self._method_update:
-            pymongo.collection.Collection._update = _original_methods['update']
-        if pymongo.collection.Collection._delete == self._method_remove:
-            pymongo.collection.Collection._delete = _original_methods['remove']
-        # if pymongo.collection.Collection.save == self._save:
-        #     pymongo.collection.Collection.save = _original_methods['save']
-        if pymongo.cursor.Cursor._refresh == self._method_refresh:
-            pymongo.cursor.Cursor._refresh = _original_methods['refresh']
+        # The checks commented below here do _not_ work. The method are not
+        # equal and thus the we would never "unpatch" the monkey-patch
+        #
+        # if pymongo.collection.Collection._insert == self._method_insert:
+        #     pymongo.collection.Collection._insert = _original_methods['insert']
+        # if pymongo.collection.Collection._update == self._method_update:
+        #     pymongo.collection.Collection._update = _original_methods['update']
+        # if pymongo.collection.Collection._delete == self._method_remove:
+        #     pymongo.collection.Collection._delete = _original_methods['remove']
+        # if pymongo.cursor.Cursor._refresh == self._method_refresh:
+        #     pymongo.cursor.Cursor._refresh = _original_methods['refresh']
+        pymongo.collection.Collection._insert = _original_methods['insert']
+        pymongo.collection.Collection._update = _original_methods['update']
+        pymongo.collection.Collection._delete = _original_methods['remove']
+        pymongo.cursor.Cursor._refresh = _original_methods['refresh']
 
     def reset(self):
         self.queries = []
