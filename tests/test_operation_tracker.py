@@ -20,6 +20,15 @@ def test_insert():
         db.people.save({'email': 'john@example.org'})
         assert len(op_tracker.inserts) == 3
 
+    # Assert that we we no longer count inserts
+    db.people.insert({'email': 'jane2@example.org'})
+    db.people.save({'email': 'john2@example.org'})
+    assert len(op_tracker.inserts) == 3
+
+    # - and that inserts work as expected
+    assert db.people.find({'email': 'john2@example.org'}).count() == 1
+    assert db.people.find({'email': 'jane2@example.org'}).count() == 1
+
 
 def test_update():
     with OpTracker() as op_tracker:
