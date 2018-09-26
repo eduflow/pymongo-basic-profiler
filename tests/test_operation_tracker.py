@@ -27,11 +27,11 @@ def test_insert(db):
     with OpTracker() as op_tracker:
         db.people.insert({'email': 'jane@example.org'})
         db.people.insert_one({'email': 'john@example.org'})
-        # db.people.insert_many(
-        #     [{'email': 'jane@example.org'}, {'email': 'john@example.org'}]
-        # )
-        db.people.save({'email': 'john@example.org'})
+        db.people.save({'name': 'John Doe', 'email': 'johndoe@example.org'})
         assert len(op_tracker.inserts) == 3
+        assert (
+            db.people.find_one({'email': 'johndoe@example.org'})['name'] == 'John Doe'
+        )
 
     # Assert that we we no longer count inserts
     db.people.insert({'email': 'jane2@example.org'})
@@ -44,6 +44,8 @@ def test_insert(db):
 
 
 def test_update(db):
+    user_id = ObjectId()
+
     with OpTracker() as op_tracker:
         db.people.update_one(
             {'email': 'jane@example.org'}, {'$set': {'name': 'Jane N. Doe'}}
@@ -55,10 +57,14 @@ def test_update(db):
             {'email': 'john@example.org'},
             {'name': 'John N. Doe', 'email': 'john@example.org'},
         )
-        db.people.save({'_id': ObjectId(), 'email': 'john@example.org'})
+        db.people.save({'_id': user_id, 'email': 'john@example.org'})
 
         assert len(op_tracker.updates) == 4
 
+    # Assert that we can still update -- after having used the `OpTracker`
+    db.people.update_one({'_id': user_id}, {'$set': {'email': 'john2@example.org'}})
+    assert db.people.find_one({'_id': user_id})['email'] == 'john2@example.org'
+    assert len(op_tracker.updates) == 4
 
 
 def test_remove(db):
