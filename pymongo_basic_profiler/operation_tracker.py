@@ -67,7 +67,7 @@ class OpTracker(object):
         self.uninstall_tracker()
 
     def _build_insert(self):
-        # @functools.wraps(_original_methods['insert'])
+        @functools.wraps(_original_methods['insert'])
         def _insert(
             collection_self,
             docs,
