@@ -3,15 +3,28 @@ import warnings
 from bson import ObjectId
 import pymongo
 from pymongo_basic_profiler import OpTracker
+import pytest
 
 
 warnings.filterwarnings('ignore', 'DeprecationWarning')
 
 
-def test_insert():
+@pytest.fixture
+def db():
+    client = pymongo.MongoClient()
+    yield client.test_optracker_db
+
+
+@pytest.fixture(autouse=True)
+def _clean_db(db):
+    '''Cleans the collection after use'''
+    db.people.delete_many({})
+    assert db.people.count() == 0
+    yield
+
+
+def test_insert(db):
     with OpTracker() as op_tracker:
-        client = pymongo.MongoClient()
-        db = client.test_optracker_db
         db.people.insert({'email': 'jane@example.org'})
         db.people.insert_one({'email': 'john@example.org'})
         # db.people.insert_many(
@@ -30,10 +43,8 @@ def test_insert():
     assert db.people.find({'email': 'jane2@example.org'}).count() == 1
 
 
-def test_update():
+def test_update(db):
     with OpTracker() as op_tracker:
-        client = pymongo.MongoClient()
-        db = client.test_optracker_db
         db.people.update_one(
             {'email': 'jane@example.org'}, {'$set': {'name': 'Jane N. Doe'}}
         )
@@ -49,21 +60,25 @@ def test_update():
         assert len(op_tracker.updates) == 4
 
 
-def test_remove():
+
+def test_remove(db):
+    db.people.insert_many(
+        [{'email': 'jane@example.org'}, {'email': 'john@example.org'}]
+    )
+    assert db.people.count() == 2
+
     with OpTracker() as op_tracker:
-        client = pymongo.MongoClient()
-        db = client.test_optracker_db
         db.people.delete_one({'email': 'jane@example.org'})
         db.people.delete_many({'email': {'$regex': 'example.org$'}})
         db.people.remove({'email': 'john@example.org'})
 
         assert len(op_tracker.removes) == 3
 
+    assert db.people.count() == 0
 
-def test_find():
+
+def test_find(db):
     with OpTracker() as op_tracker:
-        client = pymongo.MongoClient()
-        db = client.test_optracker_db
         db.people.find_one({'email': 'jane@example.org'})
         db.people.find_one({'email': 'john@example.org'})
         for person in db.people.find({'email': {'$regex': 'example.org$'}}):
@@ -72,10 +87,8 @@ def test_find():
         assert len(op_tracker.queries) == 3
 
 
-def test_readme():
+def test_readme(db):
     with OpTracker() as op_tracker:
-        client = pymongo.MongoClient()
-        db = client.test_optracker_db
         db.people.insert({'name': 'Jane Doe', 'email': 'jane@example.org'})
         db.people.find_one({'email': 'jane@example.org'})
         db.people.find_one({'name': 'Jane Doe'})
