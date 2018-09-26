@@ -13,7 +13,6 @@ _original_methods = {
     'insert': pymongo.collection.Collection._insert,
     'update': pymongo.collection.Collection._update,
     'remove': pymongo.collection.Collection._delete,
-    'save': pymongo.collection.Collection.save,
     'refresh': pymongo.cursor.Cursor._refresh,
 }
 
@@ -26,12 +25,10 @@ class OpTracker(object):
         self.inserts = []
         self.updates = []
         self.removes = []
-        self.saves = []
 
         self._method_insert = self._build_insert()
         self._method_update = self._build_update()
         self._method_remove = self._build_remove()
-        # self._method_save = self._build_save()
         self._method_refresh = self._build_refresh()
 
     def install_tracker(self):
@@ -41,8 +38,6 @@ class OpTracker(object):
             pymongo.collection.Collection._update = self._method_update
         if pymongo.collection.Collection._delete != self._method_remove:
             pymongo.collection.Collection._delete = self._method_remove
-        # if pymongo.collection.Collection.save != self._save:
-        #     pymongo.collection.Collection.save = self._save
         if pymongo.cursor.Cursor._refresh != self._method_refresh:
             pymongo.cursor.Cursor._refresh = self._method_refresh
 
@@ -63,7 +58,6 @@ class OpTracker(object):
         self.inserts = []
         self.updates = []
         self.removes = []
-        self.saves = []
 
     def __enter__(self):
         self.install_tracker()
