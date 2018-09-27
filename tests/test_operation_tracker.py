@@ -43,6 +43,35 @@ def test_insert(db):
     assert db.people.find({'email': 'jane2@example.org'}).count() == 1
 
 
+def test_bulk_write(db):
+    ops = [
+        pymongo.UpdateOne(
+            {'email': 'jane1@example.org'}, {'$set': {'name': 'Jane1'}}, upsert=True
+        ),
+        pymongo.UpdateOne(
+            {'email': 'jane2@example.org'}, {'$set': {'name': 'Jane2'}}, upsert=True
+        ),
+        pymongo.UpdateOne(
+            {'email': 'john@example.org'}, {'$set': {'name': 'John1'}}, upsert=True
+        ),
+        pymongo.UpdateOne(
+            {'email': 'john@example.org'}, {'$set': {'name': 'John2'}}, upsert=True
+        ),
+    ]
+
+    with OpTracker() as op_tracker:
+        db.people.bulk_write(ops)
+        assert len(op_tracker.bulk_writes) == 1
+        assert db.people.find_one({'email': 'jane1@example.org'})['name'] == 'Jane1'
+
+    # Assert that we we no longer count bulk_writes
+    db.people.bulk_write(ops)
+    assert len(op_tracker.bulk_writes) == 1
+
+    # - and that bulk_writes work as expected
+    assert db.people.find_one({'email': 'jane1@example.org'})['name'] == 'Jane1'
+
+
 def test_update(db):
     user_id = ObjectId()
 
