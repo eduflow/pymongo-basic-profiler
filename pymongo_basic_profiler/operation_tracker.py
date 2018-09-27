@@ -13,6 +13,7 @@ _original_methods = {
     'insert': pymongo.collection.Collection._insert,
     'update': pymongo.collection.Collection._update,
     'remove': pymongo.collection.Collection._delete,
+    'bulk_write': pymongo.collection.Collection.bulk_write,
     'refresh': pymongo.cursor.Cursor._refresh,
 }
 
@@ -24,11 +25,13 @@ class OpTracker(object):
         self.queries = []
         self.inserts = []
         self.updates = []
+        self.bulk_writes = []
         self.removes = []
 
         self._method_insert = self._build_insert()
         self._method_update = self._build_update()
         self._method_remove = self._build_remove()
+        self._method_bulk_write = self._build_bulk_write()
         self._method_refresh = self._build_refresh()
 
     def install_tracker(self):
@@ -38,6 +41,8 @@ class OpTracker(object):
             pymongo.collection.Collection._update = self._method_update
         if pymongo.collection.Collection._delete != self._method_remove:
             pymongo.collection.Collection._delete = self._method_remove
+        if pymongo.collection.Collection.bulk_write != self._method_bulk_write:
+            pymongo.collection.Collection.bulk_write = self._method_bulk_write
         if pymongo.cursor.Cursor._refresh != self._method_refresh:
             pymongo.cursor.Cursor._refresh = self._method_refresh
 
@@ -56,12 +61,14 @@ class OpTracker(object):
         pymongo.collection.Collection._insert = _original_methods['insert']
         pymongo.collection.Collection._update = _original_methods['update']
         pymongo.collection.Collection._delete = _original_methods['remove']
+        pymongo.collection.Collection.bulk_write = _original_methods['bulk_write']
         pymongo.cursor.Cursor._refresh = _original_methods['refresh']
 
     def reset(self):
         self.queries = []
         self.inserts = []
         self.updates = []
+        self.bulk_writes = []
         self.removes = []
 
     def __enter__(self):
@@ -189,6 +196,37 @@ class OpTracker(object):
             return result
 
         return _delete
+
+    def _build_bulk_write(self):
+        @functools.wraps(_original_methods['bulk_write'])
+        def bulk_write(
+            collection_self,
+            requests,
+            ordered=True,
+            bypass_document_validation=False,
+            session=None,
+        ):
+            start_time = time.time()
+            result = _original_methods['bulk_write'](
+                collection_self,
+                requests,
+                ordered=True,
+                bypass_document_validation=False,
+                session=None,
+            )
+            total_time = (time.time() - start_time) * 1000
+
+            __traceback_hide__ = True
+            self.bulk_writes.append(
+                {
+                    'requests': requests,
+                    'time': total_time,
+                    'stack_trace': self._get_stacktrace(),
+                }
+            )
+            return result
+
+        return bulk_write
 
     def _build_refresh(self):
         @functools.wraps(_original_methods['refresh'])
