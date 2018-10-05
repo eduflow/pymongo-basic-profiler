@@ -95,13 +95,13 @@ class OpTracker(object):
             result = _original_methods['insert'](
                 collection_self,
                 docs,
-                ordered=True,
-                check_keys=True,
-                manipulate=False,
-                write_concern=None,
-                op_id=None,
-                bypass_doc_val=False,
-                session=None,
+                ordered,
+                check_keys,
+                manipulate,
+                write_concern,
+                op_id,
+                bypass_doc_val,
+                session,
             )
             total_time = (time.time() - start_time) * 1000
 
